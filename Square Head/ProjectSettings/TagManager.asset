@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Platform
+  - Enemy
+  - Bullet
+  - Water
+  - Crate
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - 
+  - Water
+  - UI
+  - 
+  - 
+  - Platform
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Game Object
+    uniqueID: 2072118309
+    locked: 0
+  - name: Player or NPC
+    uniqueID: 826638703
+    locked: 0
+  - name: Water Overlap
+    uniqueID: 3173730403
+    locked: 0
+  - name: Bullet
+    uniqueID: 4079396933
+    locked: 0
+  - name: Player Dying
+    uniqueID: 2022542269
+    locked: 0
+  - name: UI
+    uniqueID: 1375523165
+    locked: 0
