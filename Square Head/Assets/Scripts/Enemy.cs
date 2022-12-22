@@ -250,17 +250,36 @@ public class Enemy : MonoBehaviour
         thisRigidbody2D.MoveRotation(-180);
 
         isDead = true;
+
+        int playerKilledEnemiesAmount = 1;
+        int playerPreviousKilledEnemies = gameControllerScript.KilledEnemies;
+        gameControllerScript.GainKilledEnemies(playerKilledEnemiesAmount);
+        playerScript.SetOverPlayerText($"+{gameControllerScript.KilledEnemies - playerPreviousKilledEnemies}", Color.magenta);
     }
 
     IEnumerator StartImmunity(float duration)
     {
-        thisSpriteRenderer.color = new Color(1f, 1f, 1f, 0.5f);
+        if (!IsInWater)
+        {
+            thisSpriteRenderer.color = new Color(1f, 1f, 1f, 0.5f);
+        }
+        else
+        {
+            thisSpriteRenderer.color = Helpers.GetInWaterColor(0.5f);
+        }
         Physics2D.IgnoreCollision(thisCollider2D, playerCollider2D, true);
         IsImmune = true;
 
         yield return new WaitForSeconds(duration);
 
-        thisSpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+        if (!IsInWater)
+        {
+            thisSpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+        }
+        else
+        {
+            thisSpriteRenderer.color = Helpers.GetInWaterColor(1f);
+        }
         Physics2D.IgnoreCollision(thisCollider2D, playerCollider2D, false);
         IsImmune = false;
     }

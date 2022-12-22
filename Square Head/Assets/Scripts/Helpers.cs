@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -50,6 +51,16 @@ namespace Assets.Scripts
                 default:
                     return new Color32(255, 255, 255, 255);
             }
+        }
+
+        public static Color GetInWaterColor(float alpha)
+        {
+            return new Color(0.6f, 0.6f, 1f, alpha);
+        }
+
+        public static float GetWaterGravityScale()
+        {
+            return 1f;
         }
     }
 
@@ -196,6 +207,25 @@ namespace Assets.Scripts
         public static bool IsIn(this float value, float minValue, float maxValue)
         {
             return value >= minValue && value <= maxValue;
+        }
+    }
+
+    public static class Collider2DArrayExtensions
+    {
+        public static void EnableAll(this Collider2D[] collider2Ds)
+        {
+            foreach (Collider2D collider2D in collider2Ds)
+            {
+                collider2D.enabled = true;
+            }
+        }
+
+        public static void DisableAll(this Collider2D[] collider2Ds)
+        {
+            foreach (Collider2D collider2D in collider2Ds)
+            {
+                collider2D.enabled = false;
+            }
         }
     }
 }

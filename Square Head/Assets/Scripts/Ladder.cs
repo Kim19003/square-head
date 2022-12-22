@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts;
+using UnityEngine;
 
 public class Ladder : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class Ladder : MonoBehaviour
         playerScript = player.GetComponent<Player>();
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerStay2D(Collider2D other)
     {
         if (other.gameObject.tag == "Player")
         {
@@ -28,13 +29,21 @@ public class Ladder : MonoBehaviour
     {
         if (other.gameObject.tag == "Player")
         {
-            playerRb.gravityScale = playerScript.DefaultGravityScale;
-            playerScript.IsOnLadder = false;
-
-            if (playerRb.velocity.y > 0.01)
+            if (!playerScript.IsInWater)
             {
-                playerRb.velocity = new Vector2(playerRb.velocity.x, ladderLeavingForce);
+                playerRb.gravityScale = playerScript.DefaultGravityScale;
+
+                if (playerRb.velocity.y > 0.01)
+                {
+                    playerRb.velocity = new Vector2(playerRb.velocity.x, ladderLeavingForce);
+                }
             }
+            else
+            {
+                playerRb.gravityScale = Helpers.GetWaterGravityScale();
+            }
+
+            playerScript.IsOnLadder = false;
         }
     }
 }

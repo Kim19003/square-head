@@ -17,7 +17,7 @@ public class Pickable : MonoBehaviour
 
     GameObject player;
     Player playerScript;
-    GameController gameController;
+    GameController gameControllerScript;
 
     bool pickedUp = false;
     bool vanishing = false;
@@ -31,7 +31,7 @@ public class Pickable : MonoBehaviour
 
         player = GameObject.Find("Player");
         playerScript = player.GetComponent<Player>();
-        gameController = GameObject.Find("GameController").GetComponent<GameController>();
+        gameControllerScript = GameObject.Find("GameController").GetComponent<GameController>();
 
         timedUnityAction = new TimedUnityAction();
     }
@@ -68,26 +68,29 @@ public class Pickable : MonoBehaviour
             switch (pickableType)
             {
                 case PickableType.Heart:
-                    if (!gameController.PlayerHasMaxLifes())
+                    if (!gameControllerScript.PlayerHasMaxLifes())
                     {
                         int healthAmount = 2;
-                        gameController.GainPlayerLifes(healthAmount);
-                        playerScript.SetOverPlayerText($"+{healthAmount}", Color.red);
+                        int previousPlayerLifes = gameControllerScript.PlayerLifes;
+                        gameControllerScript.GainPlayerLifes(healthAmount);
+                        playerScript.SetOverPlayerText($"+{gameControllerScript.PlayerLifes - previousPlayerLifes}", Color.red);
                         shouldVanish = true;
                     }
                     break;
                 case PickableType.Star:
                     int pointAmount = 1;
-                    gameController.GainPlayerPoints(pointAmount);
-                    playerScript.SetOverPlayerText($"+{pointAmount}", Color.yellow);
+                    int previousPoints = gameControllerScript.PlayerPoints;
+                    gameControllerScript.GainPlayerPoints(pointAmount);
+                    playerScript.SetOverPlayerText($"+{gameControllerScript.PlayerPoints - previousPoints}", Color.yellow);
                     shouldVanish = true;
                     break;
                 case PickableType.Ammunation:
-                    if (!gameController.PlayerHasMaxAmmunation())
+                    if (!gameControllerScript.PlayerHasMaxAmmunation())
                     {
-                        int ammunationAmount = 20;
-                        gameController.GainPlayerAmmunation(ammunationAmount);
-                        playerScript.SetOverPlayerText($"+{ammunationAmount}", Color.gray);
+                        int ammunationAmount = 10;
+                        int previousPlayerAmmunation = gameControllerScript.PlayerAmmunation;
+                        gameControllerScript.GainPlayerAmmunation(ammunationAmount);
+                        playerScript.SetOverPlayerText($"+{gameControllerScript.PlayerAmmunation - previousPlayerAmmunation}", Color.gray);
                         shouldVanish = true;
                     }
                     break;

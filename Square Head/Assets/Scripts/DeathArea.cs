@@ -11,6 +11,10 @@ public class DeathArea : MonoBehaviour
     Player playerScript;
     GameController gameControllerScript;
 
+    Vector2 previousPlayerPosition;
+
+    bool playerIsInDeathArea = false;
+
     void Start()
     {
         player = GameObject.Find("Player");
@@ -23,29 +27,40 @@ public class DeathArea : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            gameControllerScript.LosePlayerLifes(1);
+            if (!playerIsInDeathArea)
+            {
+                previousPlayerPosition = playerScript.PreviousPositionWhenGroundedAndZeroYVelocity;
 
-            StartCoroutine(ReturnToPositionAfterTime(0.5f));
+                gameControllerScript.LosePlayerLifes(1);
+
+                StartCoroutine(ReturnToPositionAfterTime(0.5f));
+            }
         }
         else if (other.CompareTag("Enemy"))
         {
-            Destroy(other.gameObject);
+            other.gameObject.GetComponent<Enemy>().Die();
         }
     }
 
     IEnumerator ReturnToPositionAfterTime(float seconds)
     {
+        playerIsInDeathArea = true;
+
         playerRb.bodyType = RigidbodyType2D.Static;
 
         yield return new WaitForSeconds(seconds);
 
         if (!gameControllerScript.PlayerIsDead())
         {
-            player.transform.position = playerScript.DefaultPosition;
+            player.transform.position = previousPlayerPosition;
+            playerRb.bodyType = RigidbodyType2D.Dynamic;
+            playerRb.velocity = new Vector2(0, 0.01f);
+            StartCoroutine(playerScript.StartImmunity(2));
+
             playerScript.SetOverPlayerTextPosition(playerScript.GetDefaultOverPlayerTextPosition());
             playerScript.SetOverPlayerText($"-1", Color.red);
-        }
 
-        playerRb.bodyType = RigidbodyType2D.Dynamic;
+            playerIsInDeathArea = false;
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Assets.Scripts;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,28 +27,28 @@ public class Water : MonoBehaviour
         {
             case "Player":
                 playerScript.IsInWater = true;
-                playerRb.gravityScale = 1f;
+                playerRb.gravityScale = Helpers.GetWaterGravityScale();
                 playerScript.SetMovementForce(playerScript.DefaultMovementForce * speedReduction);
                 playerScript.SetJumpForce(playerScript.DefaultJumpForce / 3);
                 playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce / 3);
-                playerSr.color = new Color(0.6f, 0.6f, 1f);
+                playerSr.color = Helpers.GetInWaterColor(1f);
                 break;
             case "Enemy":
                 Enemy enemyScript = collision.gameObject.GetComponent<Enemy>();
                 Rigidbody2D enemyRigidBody2D = collision.gameObject.GetComponent<Rigidbody2D>();
                 SpriteRenderer enemySpriteRenderer = collision.gameObject.GetComponent<SpriteRenderer>();
                 enemyScript.IsInWater = true;
-                enemyRigidBody2D.gravityScale = 1f;
+                enemyRigidBody2D.gravityScale = Helpers.GetWaterGravityScale();
                 enemyScript.SetMovementForce(enemyScript.DefaultMovementForce * speedReduction);
                 enemyScript.SetJumpForce(enemyScript.DefaultJumpForce / 3);
                 enemyScript.SetKnockoutForce(enemyScript.DefaultKnockoutForce / 3);
-                enemySpriteRenderer.color = new Color(0.6f, 0.6f, 1f);
+                enemySpriteRenderer.color = Helpers.GetInWaterColor(1f);
                 break;
             case "Bullet":
                 Bullet bulletScript = collision.gameObject.GetComponent<Bullet>();
                 SpriteRenderer bulletSpriteRenderer = collision.gameObject.GetComponent<SpriteRenderer>();
                 bulletScript.SetSpeed(bulletScript.DefaultSpeed * speedReduction);
-                bulletSpriteRenderer.color = new Color(0.6f, 0.6f, 1f);
+                bulletSpriteRenderer.color = Helpers.GetInWaterColor(1f);
                 break;
         }
     }
@@ -81,7 +82,7 @@ public class Water : MonoBehaviour
                 playerScript.SetJumpForce(playerScript.DefaultJumpForce);
                 playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce);
                 playerSr.color = new Color(1f, 1f, 1f);
-                if (playerRb.velocity.y > 0.01)
+                if (playerScript.IsJumping)
                 {
                     playerRb.velocity = new Vector2(playerRb.velocity.x, waterLeavingForce);
                 }

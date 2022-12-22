@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using JetBrains.Annotations;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,8 +11,9 @@ public class GameController : MonoBehaviour
     public int maxPlayerLifes = 5;
     public int maxPlayerPoints = 999;
     public int maxPlayerAmmunation = 20;
+    public int maxKilledEnemies = 999;
 
-    public Text lifesText, pointsText, ammunationText;
+    public Text lifesText, pointsText, ammunationText, killedEnemiesText;
 
     public int PlayerLifes
     {
@@ -85,6 +87,30 @@ public class GameController : MonoBehaviour
     }
     private int playerAmmunation = 0;
 
+    public int KilledEnemies
+    {
+        get
+        {
+            return killedEnemies;
+        }
+        private set
+        {
+            if (value < 0)
+            {
+                killedEnemies = 0;
+            }
+            else if (value > maxKilledEnemies)
+            {
+                killedEnemies = maxKilledEnemies;
+            }
+            else
+            {
+                killedEnemies = value;
+            }
+        }
+    }
+    private int killedEnemies = 0;
+
     void Start()
     {
         PlayerLifes = maxPlayerLifes;
@@ -143,6 +169,18 @@ public class GameController : MonoBehaviour
     {
         PlayerAmmunation -= amount;
         ammunationText.text = $"{PlayerAmmunation} X";
+    }
+
+    public void GainKilledEnemies(int amount)
+    {
+        KilledEnemies += amount;
+        killedEnemiesText.text = $"{KilledEnemies} X";
+    }
+
+    public void LoseKilledEnemies(int amount)
+    {
+        KilledEnemies -= amount;
+        killedEnemiesText.text = $"{KilledEnemies} X";
     }
 
     public void GameOver(bool clearEverything = true)

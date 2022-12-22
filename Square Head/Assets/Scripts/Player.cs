@@ -27,24 +27,27 @@ public class Player : MonoBehaviour
     public float CurrentVerticalLookingDirection { get; private set; }
     public float PreviousOtherThanZeroXVelocity { get; private set; }
     public float PreviousOtherThanZeroYVelocity { get; private set; }
+    public Vector2 PreviousPositionWhenGroundedAndZeroYVelocity { get; private set; }
 
     public int Lifes { get { return gameControllerScript.PlayerLifes; } }
     public int Points { get { return gameControllerScript.PlayerPoints; } }
     public int Ammunation { get { return gameControllerScript.PlayerAmmunation; } }
 
-    public bool IsGrounded { get { return groundCheck.IsGrounded; } }
+    public bool IsGrounded { get { return thisGroundCheck.IsGrounded; } }
     public bool IsOnLadder { get; set; }
     public bool IsInWater { get; set; }
     public bool IsOnIce { get; set; }
+    public bool IsJumping { get; private set; }
     public bool IsAttacking { get; private set; }
     public bool IsImmune { get; private set; }
     public bool IsDead { get; private set; }
 
-    Rigidbody2D rb;
-    Collider2D col;
-    SpriteRenderer sr;
-    GroundCheck groundCheck;
-    Animator animator;
+    Rigidbody2D thisRigidBody2D;
+    Collider2D[] thisCollider2Ds;
+    SpriteRenderer thisSpriteRenderer;
+    GroundCheck thisGroundCheck;
+    Animator thisAnimator;
+    
     GameController gameControllerScript;
 
     GameObject bullet;
@@ -56,18 +59,19 @@ public class Player : MonoBehaviour
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-        col = transform.Find("Normal Body").GetComponent<Collider2D>();
-        sr = GetComponent<SpriteRenderer>();
-        groundCheck = transform.Find("GroundCheck").GetComponent<GroundCheck>();
-        animator = GetComponent<Animator>();
+        thisRigidBody2D = GetComponent<Rigidbody2D>();
+        thisCollider2Ds = transform.Find("Normal Body").GetComponents<Collider2D>();
+        thisSpriteRenderer = GetComponent<SpriteRenderer>();
+        thisGroundCheck = transform.Find("GroundCheck").GetComponent<GroundCheck>();
+        thisAnimator = GetComponent<Animator>();
+        
         gameControllerScript = GameObject.Find("GameController").GetComponent<GameController>();
 
         bullet = GameObject.Find("Bullet");
 
         DefaultPosition = transform.position;
-        DefaultGravityScale = rb.gravityScale;
-        DefaultDrag = rb.drag;
+        DefaultGravityScale = thisRigidBody2D.gravityScale;
+        DefaultDrag = thisRigidBody2D.drag;
         DefaultJumpForce = jumpForce;
         DefaultMovementForce = movementForce;
         DefaultKnockoutForce = knockoutForce;
@@ -91,32 +95,32 @@ public class Player : MonoBehaviour
 
         Vector2 movementDirection = GetWantToMoveDirection();
 
-        animator.SetFloat("Horizontal", movementDirection.x);
-        animator.SetFloat("Vertical", movementDirection.y);
+        thisAnimator.SetFloat("Horizontal", movementDirection.x);
+        thisAnimator.SetFloat("Vertical", movementDirection.y);
         if (movementDirection.x != 0)
         {
             CurrentHorizontalLookingDirection = movementDirection.x;
-            animator.SetFloat("HorizontalLookingDirection", CurrentHorizontalLookingDirection);
+            thisAnimator.SetFloat("HorizontalLookingDirection", CurrentHorizontalLookingDirection);
         }
         if (movementDirection.y != 0)
         {
             CurrentVerticalLookingDirection = movementDirection.y;
-            animator.SetFloat("VerticalLookingDirection", CurrentVerticalLookingDirection);
+            thisAnimator.SetFloat("VerticalLookingDirection", CurrentVerticalLookingDirection);
         }
-        animator.SetBool("IsOnLadder", IsOnLadder);
-        animator.SetBool("IsGrounded", IsGrounded);
-        animator.SetBool("IsAttacking", IsAttacking);
-        animator.SetBool("IsOnIce", IsOnIce);
-        animator.SetFloat("HorizontalSpeed", Mathf.Abs(rb.velocity.x));
-        animator.SetFloat("VerticalSpeed", Mathf.Abs(rb.velocity.y));
+        thisAnimator.SetBool("IsOnLadder", IsOnLadder);
+        thisAnimator.SetBool("IsGrounded", IsGrounded);
+        thisAnimator.SetBool("IsAttacking", IsAttacking);
+        thisAnimator.SetBool("IsOnIce", IsOnIce);
+        thisAnimator.SetFloat("HorizontalSpeed", Mathf.Abs(thisRigidBody2D.velocity.x));
+        thisAnimator.SetFloat("VerticalSpeed", Mathf.Abs(thisRigidBody2D.velocity.y));
 
-        if (rb.velocity.x != 0)
+        if (thisRigidBody2D.velocity.x != 0)
         {
-            PreviousOtherThanZeroXVelocity = rb.velocity.x;
+            PreviousOtherThanZeroXVelocity = thisRigidBody2D.velocity.x;
         }
-        if (rb.velocity.y != 0)
+        if (thisRigidBody2D.velocity.y != 0)
         {
-            PreviousOtherThanZeroYVelocity = rb.velocity.y;
+            PreviousOtherThanZeroYVelocity = thisRigidBody2D.velocity.y;
         }
 
         SlowFasterWhenHasDrag(0.2f);
@@ -127,9 +131,17 @@ public class Player : MonoBehaviour
         }
         else if (IsGrounded)
         {
+            IsJumping = false;
+            if (thisRigidBody2D.velocity.y == 0)
+            {
+                PreviousPositionWhenGroundedAndZeroYVelocity = transform.position;
+            }
+
             if (WantToMoveUp()) // Want to jump
             {
-                rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+                thisRigidBody2D.velocity = new Vector2(thisRigidBody2D.velocity.x, jumpForce);
+
+                IsJumping = true;
             }
             else if (WantToAttack())
             {
@@ -166,17 +178,17 @@ public class Player : MonoBehaviour
         {
             if (WantToMoveLeft())
             {
-                rb.velocity = new Vector2(-movementForce, rb.velocity.y);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, thisRigidBody2D.velocity.y);
             }
             else if (WantToMoveRight())
             {
-                rb.velocity = new Vector2(movementForce, rb.velocity.y);
+                thisRigidBody2D.velocity = new Vector2(movementForce, thisRigidBody2D.velocity.y);
             }
             else
             {
                 if (!IsOnIce)
                 {
-                    rb.velocity = new Vector2(0, rb.velocity.y);
+                    thisRigidBody2D.velocity = new Vector2(0, thisRigidBody2D.velocity.y);
                 }
             }
         }
@@ -188,65 +200,65 @@ public class Player : MonoBehaviour
         {
             if (WantToMoveLeft())
             {
-                rb.velocity = new Vector2(-movementForce, movementForce);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, movementForce);
             }
             else if (WantToMoveRight())
             {
-                rb.velocity = new Vector2(movementForce, movementForce);
+                thisRigidBody2D.velocity = new Vector2(movementForce, movementForce);
             }
             else
             {
-                rb.velocity = new Vector2(0f, movementForce);
+                thisRigidBody2D.velocity = new Vector2(0f, movementForce);
             }
         }
         else if (WantToMoveDown())
         {
             if (WantToMoveLeft())
             {
-                rb.velocity = new Vector2(-movementForce, -movementForce);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, -movementForce);
             }
             else if (WantToMoveRight())
             {
-                rb.velocity = new Vector2(movementForce, -movementForce);
+                thisRigidBody2D.velocity = new Vector2(movementForce, -movementForce);
             }
             else
             {
-                rb.velocity = new Vector2(0f, -movementForce);
+                thisRigidBody2D.velocity = new Vector2(0f, -movementForce);
             }
         }
         else if (WantToMoveLeft())
         {
             if (WantToMoveUp())
             {
-                rb.velocity = new Vector2(-movementForce, movementForce);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, movementForce);
             }
             else if (WantToMoveDown())
             {
-                rb.velocity = new Vector2(-movementForce, -movementForce);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, -movementForce);
             }
             else
             {
-                rb.velocity = new Vector2(-movementForce, 0f);
+                thisRigidBody2D.velocity = new Vector2(-movementForce, 0f);
             }
         }
         else if (WantToMoveRight())
         {
             if (WantToMoveUp())
             {
-                rb.velocity = new Vector2(movementForce, movementForce);
+                thisRigidBody2D.velocity = new Vector2(movementForce, movementForce);
             }
             else if (WantToMoveDown())
             {
-                rb.velocity = new Vector2(movementForce, -movementForce);
+                thisRigidBody2D.velocity = new Vector2(movementForce, -movementForce);
             }
             else
             {
-                rb.velocity = new Vector2(movementForce, 0f);
+                thisRigidBody2D.velocity = new Vector2(movementForce, 0f);
             }
         }
         else
         {
-            rb.velocity = new Vector2(0, 0);
+            thisRigidBody2D.velocity = new Vector2(0, 0);
         }
     }
 
@@ -276,13 +288,13 @@ public class Player : MonoBehaviour
 
     public void Die()
     {
-        col.enabled = false;
-        sr.sortingLayerName = "Player Dying";
-        rb.velocity = new Vector2(0, knockoutForce / 2);
+        thisCollider2Ds.DisableAll();
+        thisSpriteRenderer.sortingLayerName = "Player Dying";
+        thisRigidBody2D.velocity = new Vector2(0, knockoutForce / 2);
 
-        rb.gravityScale = 2f;
-        rb.freezeRotation = false;
-        rb.MoveRotation(-180);
+        thisRigidBody2D.gravityScale = 2f;
+        thisRigidBody2D.freezeRotation = false;
+        thisRigidBody2D.MoveRotation(-180);
 
         IsDead = true;
     }
@@ -326,21 +338,47 @@ public class Player : MonoBehaviour
 
     public IEnumerator StartImmunity(float duration)
     {
-        sr.color = new Color(1f, 1f, 1f, 0.5f);
+        if (!IsInWater)
+        {
+            thisSpriteRenderer.color = new Color(1f, 1f, 1f, 0.5f);
+        }
+        else
+        {
+            thisSpriteRenderer.color = Helpers.GetInWaterColor(0.5f);
+        }
         GameObject[] foundEnemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (GameObject enemy in foundEnemies)
         {
-            Physics2D.IgnoreCollision(col, enemy.GetComponent<Collider2D>(), true);
+            foreach (Collider2D collider2D in thisCollider2Ds)
+            {
+                if (collider2D.enabled)
+                {
+                    Physics2D.IgnoreCollision(collider2D, enemy.GetComponent<Collider2D>(), true);
+                }
+            }
         }
         IsImmune = true;
 
         yield return new WaitForSeconds(duration);
 
-        sr.color = new Color(1f, 1f, 1f, 1f);
+        if (!IsInWater)
+        {
+            thisSpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+        }
+        else
+        {
+            thisSpriteRenderer.color = Helpers.GetInWaterColor(1f);
+        }
         foundEnemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (GameObject enemy in foundEnemies)
         {
-            Physics2D.IgnoreCollision(col, enemy.GetComponent<Collider2D>(), false);
+            foreach (Collider2D collider2D in thisCollider2Ds)
+            {
+                if (collider2D.enabled)
+                {
+                    Physics2D.IgnoreCollision(collider2D, enemy.GetComponent<Collider2D>(), false);
+                }
+            }
         }
         IsImmune = false;
     }
@@ -387,9 +425,9 @@ public class Player : MonoBehaviour
 
     void SlowFasterWhenHasDrag(float minSpeed)
     {
-        if (rb.drag > 0 && Mathf.Abs(rb.velocity.x) < minSpeed)
+        if (thisRigidBody2D.drag > 0 && Mathf.Abs(thisRigidBody2D.velocity.x) < minSpeed)
         {
-            rb.velocity = new Vector2(0, rb.velocity.y);
+            thisRigidBody2D.velocity = new Vector2(0, thisRigidBody2D.velocity.y);
         }
     }
     
@@ -399,18 +437,18 @@ public class Player : MonoBehaviour
         {
             if (isImmune)
             {
-                if (sr.color.a == 0.5f)
+                if (thisSpriteRenderer.color.a == 0.5f)
                 {
-                    sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 0f);
+                    thisSpriteRenderer.color = new Color(thisSpriteRenderer.color.r, thisSpriteRenderer.color.g, thisSpriteRenderer.color.b, 0f);
                 }
                 else
                 {
-                    sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 0.5f);
+                    thisSpriteRenderer.color = new Color(thisSpriteRenderer.color.r, thisSpriteRenderer.color.g, thisSpriteRenderer.color.b, 0.5f);
                 }
             }
-            else if (sr.color.a.IsAny(0.5f, 0f))
+            else if (thisSpriteRenderer.color.a.IsAny(0.5f, 0f))
             {
-                sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 1f);
+                thisSpriteRenderer.color = new Color(thisSpriteRenderer.color.r, thisSpriteRenderer.color.g, thisSpriteRenderer.color.b, 1f);
             }
 
             nextImmunityFlashingTime += immunityFlashingInterval;
