@@ -25,20 +25,29 @@ public class DeathArea : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (gameControllerScript.LevelCompleted)
         {
-            if (!playerIsInDeathArea)
-            {
-                previousPlayerPosition = playerScript.PreviousPositionWhenGroundedAndZeroYVelocity;
-
-                gameControllerScript.LosePlayerLifes(1);
-
-                StartCoroutine(ReturnToPositionAfterTime(0.5f));
-            }
+            return;
         }
-        else if (other.CompareTag("Enemy"))
+
+        switch (other.gameObject.tag)
         {
-            other.gameObject.GetComponent<Enemy>().Die();
+            case "Player":
+                if (!playerIsInDeathArea)
+                {
+                    previousPlayerPosition = playerScript.PreviousSafePosition;
+
+                    gameControllerScript.LosePlayerLifes(1);
+
+                    StartCoroutine(ReturnToPositionAfterTime(0.5f));
+                }
+                break;
+            case "Enemy":
+                other.transform.position = other.transform.gameObject.GetComponent<Enemy>().DefaultPosition;
+                break;
+            //case "FallingPlatform":
+            //    other.gameObject.SetActive(false);
+            //    break;
         }
     }
 

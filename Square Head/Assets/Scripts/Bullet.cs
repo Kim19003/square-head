@@ -7,6 +7,7 @@ public class Bullet : MonoBehaviour
 {
     public float speed = 20;
     public float damage = 1;
+    public bool isEnemyBullet = false;
 
     public GameObject Owner { get; set; }
 
@@ -30,11 +31,23 @@ public class Bullet : MonoBehaviour
 
     Rigidbody2D thisRb;
 
+    GameObject player;
+    Player playerScript;
+    Rigidbody2D playerRb;
+
+    GameController gameControllerScript;
+
     bool launched = false;
 
     void Start()
     {
         thisRb = GetComponent<Rigidbody2D>();
+
+        player = GameObject.Find("Player");
+        playerScript = player.GetComponent<Player>();
+        playerRb = player.GetComponent<Rigidbody2D>();
+
+        gameControllerScript = GameObject.Find("GameController").GetComponent<GameController>();
 
         DefaultSpeed = speed;
     }
@@ -64,16 +77,48 @@ public class Bullet : MonoBehaviour
             return;
         }
 
+        bool destroyBullet = false;
+
         switch (other.gameObject.tag)
         {
             case "Enemy":
-                other.gameObject.GetComponent<Enemy>().TakeDamage(damage);
-                Destroy(gameObject);
+                if (!isEnemyBullet)
+                {
+                    if (!other.gameObject.name.Contains("Boss"))
+                    {
+                        other.gameObject.GetComponent<Enemy>().TakeDamage(damage);
+                    }
+                    else
+                    {
+                        other.gameObject.GetComponent<FirstLevelBoss>().TakeDamage(damage);
+                    }
+                    destroyBullet = true;
+                }
+                break;
+            case "Player":
+                if (isEnemyBullet)
+                {
+                    if (!playerScript.IsImmune)
+                    {
+                        playerScript.TakeDamage(damage);
+                    }
+                    destroyBullet = true;
+                }
+                break;
+            case "FallingPlatform":
+                other.gameObject.GetComponent<FallingPlatform>().Fall();
+                destroyBullet = true;
                 break;
             case "Platform":
             case "Crate":
-                Destroy(gameObject);
+            case "Elevator":
+                destroyBullet = true;
                 break;
+        }
+
+        if (destroyBullet)
+        {
+            Destroy(gameObject);
         }
     }
 
@@ -90,5 +135,10 @@ public class Bullet : MonoBehaviour
     public void SetDamage(float damage)
     {
         this.damage = damage;
+    }
+
+    public void SetIsEnemyBullet(bool isEnemyBullet)
+    {
+        this.isEnemyBullet = isEnemyBullet;
     }
 }

@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Assets.Scripts;
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,10 +11,12 @@ public class GameController : MonoBehaviour
 {
     public int maxPlayerLifes = 5;
     public int maxPlayerPoints = 999;
-    public int maxPlayerAmmunation = 20;
+    public int maxPlayerAmmunation = 12;
     public int maxKilledEnemies = 999;
 
     public Text lifesText, pointsText, ammunationText, killedEnemiesText;
+
+    public Transform blackbars;
 
     public int PlayerLifes
     {
@@ -111,6 +114,13 @@ public class GameController : MonoBehaviour
     }
     private int killedEnemies = 0;
 
+    public float RunTime { get; set; }
+    public bool LevelCompleted { get; set; } = false;
+
+    bool stopRunTime = false;
+
+    bool isFullScreen = false;
+
     void Start()
     {
         PlayerLifes = maxPlayerLifes;
@@ -127,6 +137,26 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
         {
             SceneManager.LoadScene(0);
+        }
+        else if (Input.GetKeyDown(KeyCode.F))
+        {
+            if (!isFullScreen)
+            {
+                //Screen.fullScreen = true;
+                Screen.SetResolution(1280, 720, true);
+                isFullScreen = true;
+            }
+            else
+            {
+                //Screen.fullScreen = false;
+                Screen.SetResolution(640, 360, false);
+                isFullScreen = false;
+            }
+        }
+
+        if (!stopRunTime)
+        {
+            RunTime += Time.deltaTime;
         }
     }
 
@@ -193,6 +223,33 @@ public class GameController : MonoBehaviour
         SceneManager.LoadScene(1);
     }
 
+    public void LevelOver()
+    {
+        Databank.PickedStars = PlayerPoints;
+        Databank.KilledEnemies = KilledEnemies;
+        Databank.CompletionTime = RunTime;
+
+        SceneManager.LoadScene(2);
+    }
+
+    public void HideAllUIElements()
+    {
+        lifesText.transform.parent.transform.gameObject.SetActive(false);
+        pointsText.transform.parent.transform.gameObject.SetActive(false);
+        ammunationText.transform.parent.transform.gameObject.SetActive(false);
+        killedEnemiesText.transform.parent.transform.gameObject.SetActive(false);
+    }
+
+    public void ShowBlackbars(bool isTrue)
+    {
+        blackbars.gameObject.SetActive(isTrue);
+    }
+
+    public void StopRunTime()
+    {
+        stopRunTime = true;
+    }
+
     public bool PlayerHasMaxLifes()
     {
         return PlayerLifes == maxPlayerLifes;
@@ -211,5 +268,20 @@ public class GameController : MonoBehaviour
     public bool PlayerIsDead()
     {
         return PlayerLifes < 1;
+    }
+
+    public void PlayerHasBossWeapon(bool isTrue)
+    {
+        if (isTrue)
+        {
+            PlayerAmmunation = maxPlayerAmmunation;
+            ammunationText.color = Helpers.GetCustomColor(CustomColor.OrangeRed);
+            ammunationText.text = "UNLIMITED";
+        }
+        else
+        {
+            ammunationText.color = Color.white;
+            ammunationText.text = $"{PlayerAmmunation} X";
+        }
     }
 }

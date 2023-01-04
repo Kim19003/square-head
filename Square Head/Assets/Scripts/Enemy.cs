@@ -23,6 +23,7 @@ public class Enemy : MonoBehaviour
     public float rightMoveChancePercentage = 50;
     public float jumpChancePercentage = 20;
 
+    public Vector2 DefaultPosition { get; private set; }
     public float DefaultGravityScale { get; private set; }
     public float DefaultJumpForce { get; private set; }
     public float DefaultMovementForce { get; private set; }
@@ -40,8 +41,6 @@ public class Enemy : MonoBehaviour
 
     GameObject player;
     Player playerScript;
-    Rigidbody2D playerRb;
-    SpriteRenderer playerSr;
     Collider2D playerCollider2D;
     GameController gameControllerScript;
 
@@ -55,13 +54,16 @@ public class Enemy : MonoBehaviour
 
     Vector2 movementDirection = Vector2.right;
 
-    float nextAiActionTime = 0f;
     float aiActionInterval = 2f;
 
     float nextImmunityFlashingTime = 0f;
     float immunityFlashingInterval = 0.1f;
 
+    bool alertedByPlayer = false;
+
     bool isDead = false;
+
+    TimedUnityAction timedAIAction = new TimedUnityAction();
 
     void Start()
     {
@@ -70,6 +72,7 @@ public class Enemy : MonoBehaviour
         thisCollider2D = GetComponent<Collider2D>();
         thisAnimator = GetComponent<Animator>();
 
+        DefaultPosition = transform.position;
         DefaultGravityScale = thisRigidbody2D.gravityScale;
         DefaultJumpForce = jumpForce;
         DefaultMovementForce = movementForce;
@@ -77,8 +80,6 @@ public class Enemy : MonoBehaviour
 
         player = GameObject.Find("Player");
         playerScript = player.GetComponent<Player>();
-        playerRb = player.GetComponent<Rigidbody2D>();
-        playerSr = player.GetComponent<SpriteRenderer>();
         playerCollider2D = player.transform.Find("Normal Body").GetComponent<Collider2D>();
         gameControllerScript = GameObject.Find("GameController").GetComponent<GameController>();
     }
@@ -103,6 +104,8 @@ public class Enemy : MonoBehaviour
         //    thisAnimator.SetFloat("VerticalLookingDirection", CurrentVerticalLookingDirection);
         //}
 
+        thisAnimator.SetBool("IsAlertedByPlayer", alertedByPlayer);
+
         RaycastHit2D[] leftRaycastHits2D = Physics2D.RaycastAll(new Vector2(transform.position.x - 0.5f, transform.position.y), Vector2.down, 2f);
         //Debug.DrawRay(new Vector2(transform.position.x - 0.5f, transform.position.y), new Vector2(0, -2), Color.red);
         RaycastHit2D[] rightRaycastHits2D = Physics2D.RaycastAll(new Vector2(transform.position.x + 0.5f, transform.position.y), Vector2.down, 2f);
@@ -122,34 +125,67 @@ public class Enemy : MonoBehaviour
             wasOverRight = true;
         }
 
-        if (nextAiActionTime == 0f || Time.time > nextAiActionTime)
+        if (playerScript.IsDead)
+        {
+            alertedByPlayer = false;
+        }
+
+        if (alertedByPlayer)
+        {
+            if (playerScript.IsImmune)
+            {
+                StartCoroutine(StartIdling(2));
+            }
+            else if (!isIdling)
+            {
+                switch (GetPlayerDirection())
+                {
+                    case -1:
+                        isMovingRight = false;
+                        if (!isOverLeft)
+                        {
+                            isMovingLeft = true;
+                        }
+                        break;
+                    case 1:
+                        isMovingLeft = false;
+                        if (!isOverRight)
+                        {
+                            isMovingRight = true;
+                        }
+                        break;
+                }
+            }
+        }
+
+        timedAIAction.Run(() =>
         {
             //Debug.Log($"nextActionTime: {nextActionTime}");
             //Debug.Log($"Time.time: {Time.time}");
             //Debug.LogWarning($"leftRaycastHits2D distance: {(leftRaycastHits2D.Length > 0 ? leftRaycastHits2D[0].distance : -1)}");
             //Debug.LogWarning($"rightRaycastHits2D distance: {(rightRaycastHits2D.Length > 0 ? rightRaycastHits2D[0].distance : -1)}");
 
-            if (!wasOverLeft && !isIdling && !isMovingLeft && !isMovingRight && WantToMoveLeft(leftMoveChancePercentage * (wasOverRight ? 1.5f : 1f)))
+            if (!alertedByPlayer && !wasOverLeft && !isIdling && !isMovingLeft && !isMovingRight
+                && WantToMoveLeft(leftMoveChancePercentage * (wasOverRight ? 1.5f : 1f)))
             {
                 StartCoroutine(StartMovingLeft(Random.Range(minMoveTime, maxMoveTime)));
             }
-            else if (!wasOverRight && !isIdling && !isMovingLeft && !isMovingRight && WantToMoveRight(rightMoveChancePercentage * (wasOverLeft ? 1.5f : 1f)))
+            else if (!alertedByPlayer && !wasOverRight && !isIdling && !isMovingLeft && !isMovingRight
+                && WantToMoveRight(rightMoveChancePercentage * (wasOverLeft ? 1.5f : 1f)))
             {
                 StartCoroutine(StartMovingRight(Random.Range(minMoveTime, maxMoveTime)));
             }
 
-            if (!isJumping && WantToJump(jumpChancePercentage))
+            if (!wasOverLeft && !wasOverRight && !isJumping && WantToJump(jumpChancePercentage))
             {
                 isJumping = true;
             }
 
-            if (!isMovingLeft && !isMovingRight && !isIdling)
+            if (!alertedByPlayer && !isMovingLeft && !isMovingRight && !isIdling)
             {
                 StartCoroutine(StartIdling(idleTime));
             }
-
-            nextAiActionTime += aiActionInterval;
-        }
+        }, aiActionInterval, 1f);
     }
 
     void FixedUpdate()
@@ -202,35 +238,33 @@ public class Enemy : MonoBehaviour
             case "Player":
                 if (!playerScript.IsImmune)
                 {
-                    gameControllerScript.LosePlayerLifes((int)damage, false);
-                    playerScript.SetOverPlayerText($"-1", Color.red);
-
-                    if (gameControllerScript.PlayerLifes > 0)
-                    {
-                        playerRb.velocity = new Vector2(playerRb.velocity.x, knockoutForce);
-
-                        StartCoroutine(playerScript.StartImmunity(2));
-                    }
-                    else
-                    {
-                        playerScript.Die();
-                    }
+                    playerScript.TakeDamage(damage);
                 }
                 break;
         }
     }
 
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, bool causedByPlayer = true)
     {
         if (!IsImmune)
         {
             health -= damage;
+
+            if (causedByPlayer)
+            {
+                playerScript.HasAttackedEnemy = true;
+            }
 
             if (health > 0)
             {
                 thisRigidbody2D.velocity = new Vector2(thisRigidbody2D.velocity.x, knockoutForce);
 
                 StartCoroutine(StartImmunity(2));
+
+                if (causedByPlayer)
+                {
+                    alertedByPlayer = true;
+                }
             }
             else
             {
@@ -248,6 +282,9 @@ public class Enemy : MonoBehaviour
         thisRigidbody2D.gravityScale = 2f;
         thisRigidbody2D.freezeRotation = false;
         thisRigidbody2D.MoveRotation(-180);
+
+        alertedByPlayer = false;
+        thisAnimator.SetBool("IsAlertedByPlayer", alertedByPlayer);
 
         isDead = true;
 
@@ -364,7 +401,7 @@ public class Enemy : MonoBehaviour
 
     void HandleImmunityFlashing(ref float nextImmunityFlashingTime, float immunityFlashingInterval, bool isImmune)
     {
-        if (Time.time > nextImmunityFlashingTime)
+        if (Time.timeSinceLevelLoad > nextImmunityFlashingTime)
         {
             if (isImmune)
             {
@@ -383,6 +420,18 @@ public class Enemy : MonoBehaviour
             }
 
             nextImmunityFlashingTime += immunityFlashingInterval;
+        }
+    }
+
+    float GetPlayerDirection()
+    {
+        if (player.transform.position.x < transform.position.x)
+        {
+            return -1;
+        }
+        else
+        {
+            return 1;
         }
     }
 }

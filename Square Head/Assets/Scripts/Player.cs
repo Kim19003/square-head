@@ -22,18 +22,21 @@ public class Player : MonoBehaviour
     public float DefaultJumpForce { get; private set; }
     public float DefaultMovementForce { get; private set; }
     public float DefaultKnockoutForce { get; private set; }
+    public RigidbodyInterpolation2D DefaultRigidbodyInterpolation { get; private set; }
 
     public float CurrentHorizontalLookingDirection { get; private set; }
     public float CurrentVerticalLookingDirection { get; private set; }
     public float PreviousOtherThanZeroXVelocity { get; private set; }
     public float PreviousOtherThanZeroYVelocity { get; private set; }
-    public Vector2 PreviousPositionWhenGroundedAndZeroYVelocity { get; private set; }
+    public Vector2 PreviousSafePosition { get; private set; }
 
     public int Lifes { get { return gameControllerScript.PlayerLifes; } }
     public int Points { get { return gameControllerScript.PlayerPoints; } }
     public int Ammunation { get { return gameControllerScript.PlayerAmmunation; } }
 
     public bool IsGrounded { get { return thisGroundCheck.IsGrounded; } }
+    public bool IsOnPlatform { get { return thisGroundCheck.IsOnPlatform; } }
+    public bool HasAttackedEnemy { get; set; }
     public bool IsOnLadder { get; set; }
     public bool IsInWater { get; set; }
     public bool IsOnIce { get; set; }
@@ -41,6 +44,7 @@ public class Player : MonoBehaviour
     public bool IsAttacking { get; private set; }
     public bool IsImmune { get; private set; }
     public bool IsDead { get; private set; }
+    public bool HasBossWeapon { get; private set; }
 
     Rigidbody2D thisRigidBody2D;
     Collider2D[] thisCollider2Ds;
@@ -51,11 +55,14 @@ public class Player : MonoBehaviour
     GameController gameControllerScript;
 
     GameObject bullet;
+    GameObject redBullet;
 
     bool canAttack = true;
 
     float nextImmunityFlashingTime = 0f;
     float immunityFlashingInterval = 0.1f;
+
+    int consecutiveEasterEggActions = 0;
 
     void Start()
     {
@@ -68,6 +75,7 @@ public class Player : MonoBehaviour
         gameControllerScript = GameObject.Find("GameController").GetComponent<GameController>();
 
         bullet = GameObject.Find("Bullet");
+        redBullet = GameObject.Find("Red Bullet");
 
         DefaultPosition = transform.position;
         DefaultGravityScale = thisRigidBody2D.gravityScale;
@@ -75,11 +83,16 @@ public class Player : MonoBehaviour
         DefaultJumpForce = jumpForce;
         DefaultMovementForce = movementForce;
         DefaultKnockoutForce = knockoutForce;
+        DefaultRigidbodyInterpolation = thisRigidBody2D.interpolation;
     }
 
     void Update()
     {
-        if (IsDead)
+        if (gameControllerScript.LevelCompleted)
+        {
+            return;
+        }
+        else if (IsDead)
         {
             StartCoroutine(GameOverInTime(3f));
 
@@ -125,6 +138,30 @@ public class Player : MonoBehaviour
 
         SlowFasterWhenHasDrag(0.2f);
 
+        // Boss weapon easter egg
+        if (!HasBossWeapon)
+        {
+            if (gameControllerScript.PlayerAmmunation == 9)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha9))
+                {
+                    consecutiveEasterEggActions++;
+
+                    if (consecutiveEasterEggActions == 9)
+                    {
+                        SetOverPlayerText("BOSS WEAPON ACTIVATED!", Helpers.GetCustomColor(CustomColor.OrangeRed));
+                        gameControllerScript.PlayerHasBossWeapon(true);
+                        HasBossWeapon = true;
+                    }
+                }
+            }
+            else
+            {
+                consecutiveEasterEggActions = 0;
+            }
+        }
+        // -----
+
         if (IsOnLadder)
         {
             StopAttack();
@@ -132,9 +169,9 @@ public class Player : MonoBehaviour
         else if (IsGrounded)
         {
             IsJumping = false;
-            if (thisRigidBody2D.velocity.y == 0)
+            if (IsOnPlatform && thisRigidBody2D.velocity.y == 0)
             {
-                PreviousPositionWhenGroundedAndZeroYVelocity = transform.position;
+                PreviousSafePosition = transform.position;
             }
 
             if (WantToMoveUp()) // Want to jump
@@ -147,7 +184,7 @@ public class Player : MonoBehaviour
             {
                 if (!IsAttacking && canAttack)
                 {
-                    StartCoroutine(Attack(0.2f, 0.3f));
+                    StartCoroutine(Attack(0.2f, 0.2f, 0.3f));
                 }
             }
         }
@@ -157,7 +194,7 @@ public class Player : MonoBehaviour
             {
                 if (!IsAttacking && canAttack)
                 {
-                    StartCoroutine(Attack(0.2f, 0.3f));
+                    StartCoroutine(Attack(0.2f, 0.2f, 0.3f));
                 }
             }
         }
@@ -165,7 +202,20 @@ public class Player : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (IsDead)
+        if (gameControllerScript.LevelCompleted)
+        {
+            gameControllerScript.StopRunTime();
+            gameControllerScript.HideAllUIElements();
+            gameControllerScript.ShowBlackbars(true);
+
+            IsImmune = true;
+            thisRigidBody2D.velocity = new Vector2(movementForce / 2, thisRigidBody2D.velocity.y);
+
+            StartCoroutine(LevelOverInTime(5));
+
+            return;
+        }
+        else if (IsDead)
         {
             return;
         }
@@ -306,20 +356,33 @@ public class Player : MonoBehaviour
         gameControllerScript.GameOver(false);
     }
 
-    IEnumerator Attack(float attackDuration, float attackDelayDuration)
+    IEnumerator LevelOverInTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+
+        gameControllerScript.LevelOver();
+    }
+
+    IEnumerator Attack(float attackDuration, float bulletDelay, float attackDelayDuration)
     {
         IsAttacking = true;
         canAttack = false;
 
-        if (gameControllerScript.PlayerHasAmmunation())
+        if (HasBossWeapon)
         {
-            GameObject newBullet = Instantiate(bullet);
-            Bullet newBulletScript = newBullet.GetComponent<Bullet>();
-            newBulletScript.Owner = gameObject;
-            newBulletScript.CurrentHorizontalLookingDirection = CurrentHorizontalLookingDirection;
-            newBullet.transform.position = transform.position + new Vector3(CurrentHorizontalLookingDirection * 0.5f, 0, 0);
-            newBulletScript.Launch();
-            gameControllerScript.LosePlayerAmmunation(1);
+            ShootBullet(true);
+
+            yield return new WaitForSeconds(bulletDelay);
+
+            ShootBullet(true);
+
+            yield return new WaitForSeconds(bulletDelay);
+
+            ShootBullet(true);
+        }
+        else if (gameControllerScript.PlayerHasAmmunation())
+        {
+            ShootBullet();
         }
 
         yield return new WaitForSeconds(attackDuration);
@@ -331,9 +394,51 @@ public class Player : MonoBehaviour
         canAttack = true;
     }
 
+    void ShootBullet(bool isBossBullet = false)
+    {
+        GameObject newBullet;
+        if (isBossBullet)
+        {
+            newBullet = Instantiate(redBullet);
+        }
+        else
+        {
+            newBullet = Instantiate(bullet);
+        }
+        Bullet newBulletScript = newBullet.GetComponent<Bullet>();
+        newBulletScript.Owner = gameObject;
+        newBulletScript.CurrentHorizontalLookingDirection = CurrentHorizontalLookingDirection;
+        newBullet.transform.position = transform.position + new Vector3(CurrentHorizontalLookingDirection * 0.5f, 0, 0);
+        newBulletScript.Launch();
+        if (!isBossBullet)
+        {
+            gameControllerScript.LosePlayerAmmunation(1);
+        }
+    }
+
     void StopAttack()
     {
         IsAttacking = false;
+    }
+
+    public void TakeDamage(float damage)
+    {
+        if (!IsImmune)
+        {
+            gameControllerScript.LosePlayerLifes((int)damage, false);
+            SetOverPlayerText($"-{(int)damage}", Color.red);
+
+            if (gameControllerScript.PlayerLifes > 0)
+            {
+                thisRigidBody2D.velocity = new Vector2(thisRigidBody2D.velocity.x, DefaultKnockoutForce);
+
+                StartCoroutine(StartImmunity(2));
+            }
+            else
+            {
+                Die();
+            }
+        }
     }
 
     public IEnumerator StartImmunity(float duration)
@@ -433,7 +538,7 @@ public class Player : MonoBehaviour
     
     void HandleImmunityFlashing(ref float nextImmunityFlashingTime, float immunityFlashingInterval, bool isImmune)
     {
-        if (Time.time > nextImmunityFlashingTime)
+        if (Time.timeSinceLevelLoad > nextImmunityFlashingTime)
         {
             if (isImmune)
             {
@@ -499,5 +604,10 @@ public class Player : MonoBehaviour
     public Vector2 GetDefaultOverPlayerTextPosition()
     {
         return new Vector2(transform.position.x, transform.position.y + 1);
+    }
+
+    public Collider2D[] GetCollider2Ds()
+    {
+        return thisCollider2Ds;
     }
 }

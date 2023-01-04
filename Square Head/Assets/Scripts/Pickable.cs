@@ -87,7 +87,7 @@ public class Pickable : MonoBehaviour
                 case PickableType.Ammunation:
                     if (!gameControllerScript.PlayerHasMaxAmmunation())
                     {
-                        int ammunationAmount = 10;
+                        int ammunationAmount = 12;
                         int previousPlayerAmmunation = gameControllerScript.PlayerAmmunation;
                         gameControllerScript.GainPlayerAmmunation(ammunationAmount);
                         playerScript.SetOverPlayerText($"+{gameControllerScript.PlayerAmmunation - previousPlayerAmmunation}", Color.gray);

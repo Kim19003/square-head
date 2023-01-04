@@ -11,10 +11,14 @@ public class MainCamera : MonoBehaviour
     GameObject player;
     Player playerScript;
 
+    GameObject levelEndArea;
+
     public Vector3 DefaultCameraPosition { get; private set; }
     public float DefaultCameraSize { get; private set; }
 
     bool isDefaultSize = true;
+
+    float cameraMaxXPosition;
 
     void Start()
     {
@@ -23,11 +27,13 @@ public class MainCamera : MonoBehaviour
         player = GameObject.Find("Player");
         playerScript = player.GetComponent<Player>();
 
+        levelEndArea = GameObject.Find("LevelEndArea");
+
         DefaultCameraPosition = transform.position;
         DefaultCameraSize = thisCamera.orthographicSize;
-    }
 
-    readonly int cameraMaxXPosition = 10000;
+        cameraMaxXPosition = levelEndArea.transform.position.x - 10;
+    }
 
     void Update()
     {

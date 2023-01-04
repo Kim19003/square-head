@@ -29,8 +29,8 @@ public class Water : MonoBehaviour
                 playerScript.IsInWater = true;
                 playerRb.gravityScale = Helpers.GetWaterGravityScale();
                 playerScript.SetMovementForce(playerScript.DefaultMovementForce * speedReduction);
-                playerScript.SetJumpForce(playerScript.DefaultJumpForce / 3);
-                playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce / 3);
+                playerScript.SetJumpForce(playerScript.DefaultJumpForce / 2 - 1);
+                playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce / 2 - 1);
                 playerSr.color = Helpers.GetInWaterColor(1f);
                 break;
             case "Enemy":
@@ -40,8 +40,8 @@ public class Water : MonoBehaviour
                 enemyScript.IsInWater = true;
                 enemyRigidBody2D.gravityScale = Helpers.GetWaterGravityScale();
                 enemyScript.SetMovementForce(enemyScript.DefaultMovementForce * speedReduction);
-                enemyScript.SetJumpForce(enemyScript.DefaultJumpForce / 3);
-                enemyScript.SetKnockoutForce(enemyScript.DefaultKnockoutForce / 3);
+                enemyScript.SetJumpForce(enemyScript.DefaultJumpForce / 2 - 1);
+                enemyScript.SetKnockoutForce(enemyScript.DefaultKnockoutForce / 2 - 1);
                 enemySpriteRenderer.color = Helpers.GetInWaterColor(1f);
                 break;
             case "Bullet":

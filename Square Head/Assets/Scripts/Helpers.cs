@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -28,6 +26,22 @@ namespace Assets.Scripts
         Tomato,
         Gold,
         Amber
+    }
+
+    public enum Direction
+    {
+        None,
+        Left,
+        Right,
+        Up,
+        Down
+    }
+
+    public class Databank
+    {
+        public static int PickedStars { get; set; } = 0;
+        public static int KilledEnemies { get; set; } = 0;
+        public static float CompletionTime { get; set; } = 0f;
     }
 
     public class Helpers
@@ -61,6 +75,17 @@ namespace Assets.Scripts
         public static float GetWaterGravityScale()
         {
             return 1f;
+        }
+
+        public static void IgnoreCollisions(Collider2D[] collisions1, Collider2D[] collisions2, bool ignore)
+        {
+            foreach (Collider2D collision1 in collisions1)
+            {
+                foreach (Collider2D collision2 in collisions2)
+                {
+                    Physics2D.IgnoreCollision(collision1, collision2, ignore);
+                }
+            }
         }
     }
 
@@ -100,6 +125,8 @@ namespace Assets.Scripts
 
         float nextActionTime = 0f;
 
+        bool started = false;
+
         public TimedUnityAction()
         {
             
@@ -121,9 +148,9 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Call this method in Unity's Update method.
+        /// Runs {Action} every {Interval} second. Call this in Unity's Update method.
         /// </summary>
-        public void Run()
+        public void Run(float startDelay = 0f)
         {
             if (Action == null)
             {
@@ -133,19 +160,25 @@ namespace Assets.Scripts
             {
                 throw new ArgumentException("Interval must be greater than 0.");
             }
+            else if (startDelay < 0)
+            {
+                throw new ArgumentException("Start delay must be greater than or equal to 0.");
+            }
 
-            if (Time.time > nextActionTime)
+            if (Time.timeSinceLevelLoad > (startDelay > 0 && !started ? startDelay : nextActionTime))
             {
                 Action();
 
                 nextActionTime += Interval;
+
+                started = true;
             }
         }
 
         /// <summary>
-        /// Call this method in Unity's Update method.
+        /// Runs {action} every {interval} second. Call this in Unity's Update method.
         /// </summary>
-        public void Run(Action action, float interval)
+        public void Run(Action action, float interval, float startDelay = 0f)
         {
             if (action == null)
             {
@@ -155,7 +188,11 @@ namespace Assets.Scripts
             {
                 throw new ArgumentException("Interval must be greater than 0.");
             }
-            
+            else if (startDelay < 0)
+            {
+                throw new ArgumentException("Start delay must be greater than or equal to 0.");
+            }
+
             if (Action == null)
             {
                 Action = action;
@@ -170,11 +207,13 @@ namespace Assets.Scripts
                 Interval = interval;
             }
 
-            if (Time.time > nextActionTime)
+            if (Time.timeSinceLevelLoad > (startDelay > 0 && !started ? startDelay : nextActionTime))
             {
                 Action();
 
                 nextActionTime += Interval;
+
+                started = true;
             }
         }
 
