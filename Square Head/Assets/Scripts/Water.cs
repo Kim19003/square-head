@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -26,12 +27,15 @@ public class Water : MonoBehaviour
         switch (collision.gameObject.tag)
         {
             case "Player":
-                playerScript.IsInWater = true;
-                playerRb.gravityScale = Helpers.GetWaterGravityScale();
-                playerScript.SetMovementForce(playerScript.DefaultMovementForce * speedReduction);
-                playerScript.SetJumpForce(playerScript.DefaultJumpForce / 2 - 1);
-                playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce / 2 - 1);
-                playerSr.color = Helpers.GetInWaterColor(1f);
+                if (collision.gameObject.name == "Middle Body")
+                {
+                    playerScript.IsInWater = true;
+                    playerRb.gravityScale = Helpers.GetWaterGravityScale();
+                    playerScript.SetMovementForce(playerScript.DefaultMovementForce * speedReduction);
+                    playerScript.SetJumpForce(playerScript.DefaultJumpForce / 2 - 1);
+                    playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce / 2 - 1);
+                    playerSr.color = Helpers.GetInWaterColor(1f);
+                }
                 break;
             case "Enemy":
                 Enemy enemyScript = collision.gameObject.GetComponent<Enemy>();
@@ -76,15 +80,18 @@ public class Water : MonoBehaviour
         switch (collision.gameObject.tag)
         {
             case "Player":
-                playerScript.IsInWater = false;
-                playerRb.gravityScale = playerScript.DefaultGravityScale;
-                playerScript.SetMovementForce(playerScript.DefaultMovementForce);
-                playerScript.SetJumpForce(playerScript.DefaultJumpForce);
-                playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce);
-                playerSr.color = new Color(1f, 1f, 1f);
-                if (playerScript.IsJumping)
+                if (collision.gameObject.name == "Middle Body")
                 {
-                    playerRb.velocity = new Vector2(playerRb.velocity.x, waterLeavingForce);
+                    playerScript.IsInWater = false;
+                    playerRb.gravityScale = playerScript.DefaultGravityScale;
+                    playerScript.SetMovementForce(playerScript.DefaultMovementForce);
+                    playerScript.SetJumpForce(playerScript.DefaultJumpForce);
+                    playerScript.SetKnockoutForce(playerScript.DefaultKnockoutForce);
+                    playerSr.color = new Color(1f, 1f, 1f);
+                    if (playerScript.IsJumping)
+                    {
+                        playerRb.velocity = new Vector2(playerRb.velocity.x, waterLeavingForce);
+                    }
                 }
                 break;
             case "Enemy":

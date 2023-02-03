@@ -18,7 +18,8 @@ public class Ladder : MonoBehaviour
 
     void OnTriggerStay2D(Collider2D other)
     {
-        if (other.gameObject.tag == "Player")
+        Debug.Log(other.gameObject.name);
+        if (other.gameObject.tag == "Player" && other.gameObject.name == "Middle Body")
         {
             playerRb.gravityScale = 0f;
             playerScript.IsOnLadder = true;
@@ -27,7 +28,7 @@ public class Ladder : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" && other.gameObject.name == "Middle Body")
         {
             if (!playerScript.IsInWater)
             {

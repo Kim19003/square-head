@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using System;
 using System.Collections;
 using System.Drawing;
 using System.Numerics;
@@ -58,6 +59,7 @@ public class Player : MonoBehaviour
     GameObject redBullet;
 
     bool canAttack = true;
+    bool canJumpInWater = true;
 
     float nextImmunityFlashingTime = 0f;
     float immunityFlashingInterval = 0.1f;
@@ -107,6 +109,8 @@ public class Player : MonoBehaviour
         HandleImmunityFlashing(ref nextImmunityFlashingTime, immunityFlashingInterval, IsImmune);
 
         Vector2 movementDirection = GetWantToMoveDirection();
+
+        Debug.Log(thisRigidBody2D.velocity.x);
 
         thisAnimator.SetFloat("Horizontal", movementDirection.x);
         thisAnimator.SetFloat("Vertical", movementDirection.y);
@@ -162,6 +166,29 @@ public class Player : MonoBehaviour
         }
         // -----
 
+        if (IsInWater && canJumpInWater)
+        {
+            IsJumping = false;
+
+            if (WantToMoveUp()) // Want to jump
+            {
+                thisRigidBody2D.velocity = new Vector2(thisRigidBody2D.velocity.x, jumpForce);
+
+                IsJumping = true;
+
+                if (!canJumpInWaterAfterActivated)
+                {
+                    StartCoroutine(CanJumpInWaterAfter(0.75f));
+                }
+            }
+        }
+        else if (!IsInWater && canJumpInWaterAfterActivated)
+        {
+            canJumpInWater = true;
+            StopCoroutine(nameof(CanJumpInWaterAfter));
+            canJumpInWaterAfterActivated = false;
+        }
+
         if (IsOnLadder)
         {
             StopAttack();
@@ -169,6 +196,13 @@ public class Player : MonoBehaviour
         else if (IsGrounded)
         {
             IsJumping = false;
+            canJumpInWater = true;
+            if (canJumpInWaterAfterActivated)
+            {
+                StopCoroutine(nameof(CanJumpInWaterAfter));
+                canJumpInWaterAfterActivated = false;
+            }
+            
             if (IsOnPlatform && thisRigidBody2D.velocity.y == 0)
             {
                 PreviousSafePosition = transform.position;
@@ -394,6 +428,18 @@ public class Player : MonoBehaviour
         canAttack = true;
     }
 
+    bool canJumpInWaterAfterActivated = false;
+    IEnumerator CanJumpInWaterAfter(float seconds)
+    {
+        canJumpInWaterAfterActivated = true;
+        canJumpInWater = false;
+
+        yield return new WaitForSeconds(seconds);
+
+        canJumpInWater = true;
+        canJumpInWaterAfterActivated = false;
+    }
+
     void ShootBullet(bool isBossBullet = false)
     {
         GameObject newBullet;
@@ -500,7 +546,7 @@ public class Player : MonoBehaviour
 
     bool WantToMoveUp()
     {
-        return Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+        return Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.Space);
     }
 
     bool WantToMoveDown()
@@ -510,7 +556,7 @@ public class Player : MonoBehaviour
 
     bool WantToAttack()
     {
-        return Input.GetKey(KeyCode.Space);
+        return Input.GetKey(KeyCode.Z);
     }
 
     public void SetJumpForce(float jumpForce)

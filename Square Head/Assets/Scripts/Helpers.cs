@@ -87,6 +87,26 @@ namespace Assets.Scripts
                 }
             }
         }
+
+        public static Resolution GetMaxResolutionInAspectRatio(int x, int y)
+        {
+            Resolution maxResolution = new Resolution();
+            maxResolution.width = 0;
+            maxResolution.height = 0;
+
+            foreach (Resolution resolution in Screen.resolutions)
+            {
+                if (resolution.width / (float)resolution.height == x / (float)y)
+                {
+                    if (resolution.width > maxResolution.width)
+                    {
+                        maxResolution = resolution;
+                    }
+                }
+            }
+
+            return maxResolution;
+        }
     }
 
     public class TimedUnityAction

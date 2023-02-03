@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -142,13 +143,12 @@ public class GameController : MonoBehaviour
         {
             if (!isFullScreen)
             {
-                //Screen.fullScreen = true;
-                Screen.SetResolution(1280, 720, true);
+                Resolution maxResolution = Helpers.GetMaxResolutionInAspectRatio(16, 9);
+                Screen.SetResolution(maxResolution.width, maxResolution.height, true);
                 isFullScreen = true;
             }
             else
             {
-                //Screen.fullScreen = false;
                 Screen.SetResolution(640, 360, false);
                 isFullScreen = false;
             }
